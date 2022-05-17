@@ -36,6 +36,7 @@ final class LoginViewController: UIViewController {
         let textField = UITextField(frame: .zero)
         textField.placeholder = " Ingresa tu contraseña"
         textField.backgroundColor = .white
+        textField.isSecureTextEntry = true
         return textField
     }()
     private lazy var loginButton: UIButton = {
