@@ -8,9 +8,16 @@
 import UIKit
 
 protocol HomeViewOutput {
+    var delegate: HomeViewDelegate? { get set }
     func showNavigationActionSheet()
-    func fetchList(section: showType, onSuccess: @escaping (_ model: [Results]?) -> Void)
+    func fetchList(section: showType, onSuccess: @escaping () -> Void)
+    var dataSource: [Results]? { get }
     func showDetail(itemId: Int, detailType: detailType)
+    func saveFavorite(index: Int)
+}
+
+protocol HomeViewDelegate: AnyObject {
+    func updateData()
 }
 
 final class HomeViewController: UIViewController {
@@ -35,7 +42,7 @@ final class HomeViewController: UIViewController {
     }()
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.itemSize = CGSize(width: UIScreen.main.bounds.width/2.3, height: UIScreen.main.bounds.height/2.5)
+        layout.itemSize = CGSize(width: (UIScreen.main.bounds.width-45)/2, height: UIScreen.main.bounds.height/2.5)
         layout.scrollDirection = .vertical
         
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -43,8 +50,7 @@ final class HomeViewController: UIViewController {
         return collection
     }()
     
-    private var dataSource = [Results]()
-    let presenter: HomeViewOutput
+    var presenter: HomeViewOutput
     
     init(presenter: HomeViewOutput) {
         self.presenter = presenter
@@ -60,6 +66,9 @@ final class HomeViewController: UIViewController {
         super.viewDidLayoutSubviews()
         self.navigationItem.hidesBackButton = true
         self.navigationController?.setNavigationBarHidden(false, animated: true)
+        if let flow = self.collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
+            flow.itemSize = CGSize(width: (self.collectionView.frame.size.width-20)/2, height: self.collectionView.frame.size.height/2.3)
+        }
     }
     
     override func viewDidLoad() {
@@ -76,7 +85,7 @@ final class HomeViewController: UIViewController {
     func setupCollectionView() {
         collectionView.delegate = self
         collectionView.dataSource = self
-        collectionView.register(HomeMoviesCell.self, forCellWithReuseIdentifier: "HomeMoviesCell")
+        collectionView.register(MoviesCell.self, forCellWithReuseIdentifier: "MoviesCell")
         collectionView.reloadData()
     }
     
@@ -85,6 +94,7 @@ final class HomeViewController: UIViewController {
         self.navigationItem.titleView = navigationTitle
         self.view.addSubview(segmentedControl)
         self.view.addSubview(collectionView)
+        self.presenter.delegate = self
         
         segmentedControl.translatesAutoresizingMaskIntoConstraints = false
         segmentedControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8).isActive = true
@@ -121,30 +131,37 @@ final class HomeViewController: UIViewController {
         default:
             break
         }
-        presenter.fetchList(section: selection) { [weak self] data in
-            guard let self = self else { return }
-            if let model = data {
-                self.dataSource = model
-                self.collectionView.reloadData()
-            }
+        presenter.fetchList(section: selection) {
+            self.collectionView.reloadData()
         }
     }
 }
 
 extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        dataSource.count
+        presenter.dataSource?.count ?? 0
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "HomeMoviesCell", for: indexPath) as! HomeMoviesCell
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MoviesCell", for: indexPath) as! MoviesCell
+        cell.layer.shouldRasterize = true
+        cell.layer.rasterizationScale = UIScreen.main.scale
         cell.presenter = presenter
-        cell.model = dataSource[indexPath.row]
+        guard let source = presenter.dataSource else { return cell }
+        cell.model = source[indexPath.row]
+        cell.index = indexPath.row
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let detail = segmentedControl.selectedSegmentIndex == 0 || segmentedControl.selectedSegmentIndex == 1 ? detailType.movieDetail : detailType.TVDetail
-        presenter.showDetail(itemId: dataSource[indexPath.row].id ?? 0, detailType: detail)
+        guard let source = presenter.dataSource else { return }
+        presenter.showDetail(itemId: source[indexPath.row].id ?? 0, detailType: detail)
+    }
+}
+
+extension HomeViewController: HomeViewDelegate {
+    func updateData() {
+        self.collectionView.reloadData()
     }
 }

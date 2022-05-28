@@ -24,6 +24,6 @@ extension ProfileWireframe: ProfileWireframeProtocol {
     func showProfile(with presenter: ProfileViewOutput) {
         guard let baseController = baseController else { return }
         let viewController = ProfileViewController(presenter: presenter)
-        baseController.pushViewController(viewController, animated: true)
+        baseController.present(viewController, animated: true, completion: nil)
     }
 }

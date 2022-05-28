@@ -14,6 +14,8 @@ protocol HomePresenterProtocol: HomeViewOutput {
 final class HomePresenter {
     private let wireframe: HomeWireframeProtocol
     private let interactor: HomeInteractorProtocol
+    weak var delegate: HomeViewDelegate?
+    private var section: showType = .popular
     
     init(wireframe: HomeWireframeProtocol, interactor: HomeInteractorProtocol) {
         self.wireframe = wireframe
@@ -22,16 +24,20 @@ final class HomePresenter {
 }
 
 extension HomePresenter: HomePresenterProtocol {
-    func showDetail(itemId: Int, detailType: detailType) {
-        wireframe.showDetailModule(itemId: itemId, detailType: detailType)
+    func saveFavorite(index: Int) {
+        interactor.saveFavorite(index: index) {
+            self.fetchList(section: self.section) {
+                self.delegate?.updateData()
+            }
+        }
     }
     
-    func fetchList(section: showType, onSuccess: @escaping (_ model: [Results]?) -> Void) {
-        wireframe.showAnimation {
-            self.interactor.fetchMovieList(section: section) { [weak self] model in
-                guard let self = self else { return }
+    func fetchList(section: showType, onSuccess: @escaping () -> Void) {
+        self.section = section
+        self.wireframe.showAnimation {
+            self.interactor.fetchMovieList(section: section) {
                 self.wireframe.hideAnimation {
-                    onSuccess(model)
+                    onSuccess()
                 }
             } onError: { [weak self] message in
                 guard let self = self else { return }
@@ -40,6 +46,14 @@ extension HomePresenter: HomePresenterProtocol {
                 }
             }
         }
+    }
+    
+    var dataSource: [Results]? {
+        interactor.dataSource
+    }
+    
+    func showDetail(itemId: Int, detailType: detailType) {
+        wireframe.showDetailModule(itemId: itemId, detailType: detailType)
     }
     
     func showNavigationActionSheet() {

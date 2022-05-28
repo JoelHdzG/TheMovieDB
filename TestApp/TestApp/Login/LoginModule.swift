@@ -10,20 +10,14 @@ import UIKit
 
 final class LoginModule {
 
+    var navigation: UINavigationController
     private let presenter: LoginPresenterProtocol
-    private var wireframe: LoginWireframeProtocol
     
     init() {
         let interactor = LoginInteractor()
-        wireframe = LoginWireframe()
+        let wireframe = LoginWireframe()
         presenter = LoginPresenter(wireframe: wireframe, interactor: interactor)
-    }
-    
-    func showLogin() -> UIViewController {
-        presenter.showLogin()
-    }
-    
-    func setNavigation(navigation: UINavigationController) {
+        navigation = UINavigationController(rootViewController: presenter.showLogin())
         wireframe.navigation = navigation
     }
 }

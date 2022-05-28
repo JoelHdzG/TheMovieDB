@@ -13,7 +13,7 @@ protocol LoginViewOutput {
     func showHome()
 }
 
-protocol LoginViewDelegate: AnyObject{
+protocol LoginViewDelegate: AnyObject {
     func willShowLoginError(success: Bool)
 }
 
@@ -30,6 +30,7 @@ final class LoginViewController: UIViewController {
         let textField = UITextField(frame: .zero)
         textField.placeholder = " Ingresa tu usuario"
         textField.backgroundColor = .white
+        textField.text = ""
         return textField
     }()
     private lazy var securityTextField: UITextField = {
@@ -37,6 +38,7 @@ final class LoginViewController: UIViewController {
         textField.placeholder = " Ingresa tu contraseña"
         textField.backgroundColor = .white
         textField.isSecureTextEntry = true
+        textField.text = ""
         return textField
     }()
     private lazy var loginButton: UIButton = {

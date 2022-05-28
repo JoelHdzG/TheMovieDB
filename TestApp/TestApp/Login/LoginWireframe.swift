@@ -32,15 +32,19 @@ extension LoginWireframe: LoginWireframeProtocol {
     
     func showAnimation(completion: @escaping () -> Void) {
         animationView = UIAlertController.GlobalViews.animationView
-        navigation?.present(animationView ?? UIAlertController(), animated: true, completion: {
-            completion()
-        })
+        DispatchQueue.main.async {
+            self.navigation?.present(self.animationView ?? UIAlertController(), animated: true, completion: {
+                completion()
+            })
+        }
     }
     
     func hideAnimation(completion: @escaping () -> Void) {
-        animationView?.dismiss(animated: true, completion: {
-            completion()
-        })
+        DispatchQueue.main.async {
+            self.animationView?.dismiss(animated: true, completion: {
+                completion()
+            })
+        }
     }
     
     func showAlert(message: String) {

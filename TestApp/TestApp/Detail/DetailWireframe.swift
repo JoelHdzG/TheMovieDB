@@ -6,12 +6,15 @@
 //
 
 import UIKit
+import AVKit
+import AVFoundation
 
 protocol DetailWireframeProtocol {
     func showDetail(with presenter: DetailViewOutput)
     func showAnimation(completion: @escaping () -> Void)
     func hideAnimation(completion: @escaping () -> Void)
     func showAlert(message: String)
+    func showTrailer()
 }
 
 final class DetailWireframe {
@@ -32,9 +35,11 @@ extension DetailWireframe: DetailWireframeProtocol {
     
     func showAnimation(completion: @escaping () -> Void) {
         animationView = UIAlertController.GlobalViews.animationView
-        baseController?.present(animationView ?? UIAlertController(), animated: true, completion: {
-            completion()
-        })
+        DispatchQueue.main.async {
+            self.baseController?.present(self.animationView ?? UIAlertController(), animated: true, completion: {
+                completion()
+            })
+        }
     }
     
     func hideAnimation(completion: @escaping () -> Void) {
@@ -49,6 +54,17 @@ extension DetailWireframe: DetailWireframeProtocol {
         let alert = UIAlertController(title: "Aviso", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Aceptar", style: .default, handler: { action in }))
         baseController?.present(alert, animated: true, completion: nil)
+    }
+    
+    func showTrailer() {
+        let videoURL = URL(string: "https://static.videezy.com/system/resources/previews/000/002/282/original/slow-motion-pouring-water.mp4")
+        let player = AVPlayer(url: videoURL!)
+        let playerViewController = AVPlayerViewController()
+        playerViewController.player = player
+        guard let navigation = baseController else { return }
+        navigation.present(playerViewController, animated: true) {
+            playerViewController.player!.play()
+        }
     }
     
 }

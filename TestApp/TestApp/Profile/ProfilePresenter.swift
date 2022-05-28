@@ -22,6 +22,10 @@ final class ProfilePresenter {
 }
 
 extension ProfilePresenter: ProfilePresenterProtocol {
+    var dataSource: [Results]? {
+        interactor.getFavorites()
+    }
+    
     func showProfile() {
         wireframe.showProfile(with:self)
     }

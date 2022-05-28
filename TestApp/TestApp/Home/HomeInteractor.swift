@@ -8,22 +8,97 @@
 import Foundation
 
 protocol HomeInteractorProtocol {
-    func fetchMovieList(section: showType, onSuccess: @escaping (_ model: [Results]?) -> Void, onError: @escaping (_ message: String) -> Void)
+    func fetchMovieList(section: showType, onSuccess: @escaping () -> Void, onError: @escaping (_ message: String) -> Void)
+    var dataSource: [Results]? { get }
+    func saveFavorite(index: Int, onSaved: @escaping () -> Void)
+    func getFavorites() -> [Results]?
 }
 
-final class HomeInteractor {
-    let dataManager = DataManager()
+final class HomeInteractor: DataManagerProtocol {
+    var urlDomain = DataManagerConstans.urlDomain
+    var apiKey = DataManagerConstans.apiKey
+    var page = DataManagerConstans.page
+    var data: [Results]?
 }
 
 extension HomeInteractor: HomeInteractorProtocol {
-    func fetchMovieList(section: showType, onSuccess: @escaping (_ model: [Results]?) -> Void, onError: @escaping (_ message: String) -> Void) {
-        let url = dataManager.getShowsListURL(section: section)
-        dataManager.fetchData(model: MovieResponse.self, urlPath: url) { result in
+    func getFavorites() -> [Results]? {
+        if let data = UserDefaults.standard.data(forKey: "SavedData") {
+            if let decoded = try? JSONDecoder().decode([Results].self, from: data) {
+                debugPrint(decoded)
+                return decoded
+            }
+        }
+        return nil
+    }
+    
+    func saveFavorite(index: Int, onSaved: @escaping () -> Void) {
+        guard let favorite = dataSource?[index] else { return }
+        if let data = UserDefaults.standard.data(forKey: "SavedData") {
+            if let List = try? JSONDecoder().decode([Results].self, from: data) {
+                debugPrint(List)
+                var updatedList = [Results]()
+                List.forEach { show in
+                    updatedList.append(show)
+                }
+                if !updatedList.contains(where: {$0.id == favorite.id }) {
+                    updatedList.append(favorite)
+                }
+                debugPrint(updatedList)
+                if let encoded = try? JSONEncoder().encode(updatedList) {
+                    UserDefaults.standard.set(encoded, forKey: "SavedData")
+                    
+                    if let data = UserDefaults.standard.data(forKey: "SavedData") {
+                        if let decoded = try? JSONDecoder().decode([Results].self, from: data) {
+                            debugPrint(decoded)
+                        }
+                    }
+                    onSaved()
+                    return
+                }
+            }
+        } else {
+            var updatedList = [Results]()
+            updatedList.append(favorite)
+            debugPrint(updatedList)
+            if let encoded = try? JSONEncoder().encode(updatedList) {
+                UserDefaults.standard.set(encoded, forKey: "SavedData")
+                
+                if let data = UserDefaults.standard.data(forKey: "SavedData") {
+                    if let decoded = try? JSONDecoder().decode([Results].self, from: data) {
+                        debugPrint(decoded)
+                    }
+                }
+                onSaved()
+                return
+            }
+        }
+    }
+    
+    var dataSource: [Results]? {
+        data
+    }
+    
+    func fetchMovieList(section: showType, onSuccess: @escaping () -> Void, onError: @escaping (_ message: String) -> Void) {
+        let url = getShowsListURL(section: section)
+        fetchData(model: MovieResponse.self, urlPath: url) { result in
             switch result {
             case .failure(let fail):
                 onError(fail.localizedDescription)
             case .success(let response):
-                onSuccess(response.results)
+                self.data = response.results
+                guard let favorites = self.getFavorites(), let origin = self.data else {
+                    onSuccess()
+                    return
+                }
+                for i in 0..<origin.count {
+                    for j in 0..<favorites.count {
+                        if origin[i].id == favorites[j].id {
+                            self.data![i].isFavorite = true
+                        }
+                    }
+                }
+                onSuccess()
                 break
             }
         }
@@ -69,6 +144,7 @@ struct Results : Codable {
     let vote_count : Int?
     let name: String?
     let first_air_date: String?
+    var isFavorite: Bool = false
     
     enum CodingKeys: String, CodingKey {
         case adult = "adult"

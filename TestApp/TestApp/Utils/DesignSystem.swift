@@ -28,20 +28,38 @@ extension UIAlertController {
             alert.addAction(UIAlertAction(title: "Aceptar", style: .default, handler: { action in }))
             return alert
         }
+        static func navigationActionSheet(onProfile: @escaping () -> Void, onLogOut: @escaping () -> Void, OnCancel: @escaping () -> Void) -> UIAlertController {
+            let actionSheet = UIAlertController(title: "What do you want to do?", message: nil, preferredStyle: .actionSheet)
+            actionSheet.addAction(UIAlertAction(title: "View Profile", style: .default, handler: { action in
+                onProfile()
+            }))
+            actionSheet.addAction(UIAlertAction(title: "Log out", style: .destructive, handler: { action in
+                onLogOut()
+            }))
+            actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { action in
+                OnCancel()
+            }))
+            return actionSheet
+        }
     }
 }
 
-
 extension UIImageView {
     func downloadImage(path: String) {
-        let url = URL(string: "https://image.tmdb.org/t/p/original/\(path)")!
-        let dataTask = URLSession.shared.dataTask(with: url) { [weak self] (data, _, _) in
-            if let data = data {
-                DispatchQueue.main.async {
-                    self?.image = UIImage(data: data)
+        DispatchQueue.global(qos: .background).async {
+            let url = URL(string: "https://image.tmdb.org/t/p/original/\(path)")!
+            let dataTask = URLSession.shared.dataTask(with: url) { [weak self] (data, URLResponse, fail) in
+                if let data = data, let httpResponse = URLResponse as? HTTPURLResponse {
+                    DispatchQueue.main.async {
+                        if httpResponse.statusCode == 200 {
+                            self?.image = UIImage(data: data)
+                        } else {
+                            self?.image = UIImage(named: "loader")
+                        }
+                    }
                 }
             }
+            dataTask.resume()
         }
-        dataTask.resume()
     }
 }

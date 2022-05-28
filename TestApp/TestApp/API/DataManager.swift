@@ -20,19 +20,24 @@ enum detailType: String {
     case TVDetail = "tv/"
 }
 
-class DataManager {
-    private let urlDomain = "https://api.themoviedb.org/3/"
-    private let apiKey = "?api_key=61eadb867e993e137afed1b165511c52&language=en-US"
-    private let page = "&page=1"
-    
+protocol DataManagerProtocol {
+    func getShowsListURL(section: showType) -> String
+    func getShowsDetailURL(detail: detailType, showId: Int) -> String
+    func fetchData<T: Decodable>(model: T.Type, urlPath: String, onFinished: @escaping (Result<T, Error>) -> Void)
+    var urlDomain: String {get set}
+    var apiKey: String {get set}
+    var page: String {get set}
+}
+
+extension DataManagerProtocol {
     func getShowsListURL(section: showType) -> String {
         return "\(urlDomain)\(section.rawValue)\(apiKey)\(page)"
     }
-    
+
     func getShowsDetailURL(detail: detailType, showId: Int) -> String {
         return "\(urlDomain)\(detail.rawValue)\(showId)\(apiKey)"
     }
-    
+
     func fetchData<T: Decodable>(model: T.Type, urlPath: String, onFinished: @escaping (Result<T, Error>) -> Void) {
         guard let url = URL(string: urlPath) else {
             print("Invalid URL")
@@ -54,4 +59,10 @@ class DataManager {
         }
         .resume()
     }
+}
+
+struct DataManagerConstans {
+    static var urlDomain = "https://api.themoviedb.org/3/"
+    static var apiKey = "?api_key=61eadb867e993e137afed1b165511c52&language=en-US"
+    static var page = "&page=1"
 }

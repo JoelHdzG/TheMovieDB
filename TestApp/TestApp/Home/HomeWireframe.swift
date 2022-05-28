@@ -30,15 +30,12 @@ final class HomeWireframe {
 extension HomeWireframe: HomeWireframeProtocol {
     func showNavigationActionSheet() {
         guard let navigation = baseController else { return }
-        let actionSheet = UIAlertController(title: "What do you want to do?", message: nil, preferredStyle: .actionSheet)
-        actionSheet.addAction(UIAlertAction(title: "View Profile", style: .default, handler: { action in
+        let actionSheet = UIAlertController.GlobalViews.navigationActionSheet {
             let module = ProfileModule(with: navigation)
             module.showProfile()
-        }))
-        actionSheet.addAction(UIAlertAction(title: "Log out", style: .destructive, handler: { action in
+        } onLogOut: {
             navigation.popToRootViewController(animated: true)
-        }))
-        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        } OnCancel: {}
         navigation.present(actionSheet, animated: true)
     }
     
@@ -50,15 +47,19 @@ extension HomeWireframe: HomeWireframeProtocol {
     
     func showAnimation(completion: @escaping () -> Void) {
         animationView = UIAlertController.GlobalViews.animationView
-        baseController?.present(animationView ?? UIAlertController(), animated: true, completion: {
-            completion()
-        })
+        DispatchQueue.main.async {
+            self.baseController?.present(self.animationView ?? UIAlertController(), animated: true, completion: {
+                completion()
+            })
+        }
     }
     
     func hideAnimation(completion: @escaping () -> Void) {
-        animationView?.dismiss(animated: true, completion: {
-            completion()
-        })
+        DispatchQueue.main.async {
+            self.animationView?.dismiss(animated: true, completion: {
+                completion()
+            })
+        }
     }
     
     func showAlert(message: String) {
@@ -68,7 +69,8 @@ extension HomeWireframe: HomeWireframeProtocol {
     }
     
     func showDetailModule(itemId: Int, detailType: detailType) {
-        let module = DetailModule(with: baseController ?? UINavigationController(), detailType: detailType, itemId: itemId)
+        let input = DetailInput(with: detailType, itemId: itemId)
+        let module = DetailModule(with: baseController ?? UINavigationController(), input: input)
         module.showDetail()
     }
     
